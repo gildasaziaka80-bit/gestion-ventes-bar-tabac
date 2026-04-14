@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Bar Tabac</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#080b12;--s1:#0e1220;--s2:#141928;--s3:#1c2335;
+  --bd:#1e2740;--bd2:#28334f;
+  --tx:#c8d3ea;--tx2:#8896b3;--tx3:#4a566e;
+  --blue:#3b82f6;--blue-g:rgba(59,130,246,.15);
+  --green:#10b981;--green-g:rgba(16,185,129,.12);
+  --amber:#f59e0b;--amber-g:rgba(245,158,11,.12);
+  --red:#ef4444;--red-g:rgba(239,68,68,.12);
+  --purple:#a78bfa;--purple-g:rgba(167,139,250,.12);
+  --cyan:#38bdf8;--cyan-g:rgba(56,189,248,.12);
+  --fdj:#34d399;
+  --mono:'JetBrains Mono',monospace;--sans:'Sora',sans-serif;
+  --r:10px;--r2:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);font-size:13px;line-height:1.5;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:226px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column}
+.logo{padding:20px 18px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:11px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo-name{font-size:14px;font-weight:700;letter-spacing:-.01em;color:#e8edf8}
+.logo-sub{font-size:10px;color:var(--tx3);margin-top:1px}
+.nav{flex:1;overflow-y:auto;padding:12px 8px}
+.nav::-webkit-scrollbar{width:0}
+.ng{margin-bottom:20px}
+.ng-label{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--tx3);text-transform:uppercase;padding:0 10px 7px}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--tx2);font-size:12px;font-weight:400;border:none;background:none;width:100%;text-align:left;transition:all .14s;position:relative}
+.ni:hover{background:var(--s2);color:var(--tx)}
+.ni.active{background:var(--blue-g);color:#6ea8fb;font-weight:500}
+.ni.active::before{content:'';position:absolute;left:0;top:25%;bottom:25%;width:2px;border-radius:2px;background:var(--blue)}
+.ni .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-left:auto}
+.dot-tabac{background:var(--purple)}
+.dot-bar{background:var(--cyan)}
+.dot-fdj{background:var(--fdj)}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--bd);font-size:10px;color:var(--tx3);line-height:1.8}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--s1);border-bottom:1px solid var(--bd);padding:0 22px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-title{font-size:14px;font-weight:600;color:#e8edf8}
+.topbar-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--s3);color:var(--tx2);border:1px solid var(--bd2)}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.msel{background:var(--s2);border:1px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:var(--sans);font-size:12px;padding:6px 28px 6px 12px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238896b3' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.btn{padding:6px 14px;border-radius:7px;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--bd2);background:var(--s2);color:var(--tx2);transition:all .14s}
+.btn:hover{color:var(--tx);background:var(--s3)}
+.btn-blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-blue:hover{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn-green{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.3);color:var(--green)}
+.btn-green:hover{background:rgba(16,185,129,.25);color:var(--green)}
+.content{flex:1;overflow-y:auto;padding:20px 22px}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+/* PANELS */
+.panel{display:none}
+.panel.active{display:block;animation:fadeUp .18s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;margin-bottom:14px}
+.card-head{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.08em}
+.card-body{padding:18px}
+
+/* KPIs */
+.krow{display:grid;gap:12px;margin-bottom:16px}
+.k5{grid-template-columns:repeat(5,1fr)}
+.k4{grid-template-columns:repeat(4,1fr)}
+.k3{grid-template-columns:repeat(3,1fr)}
+.kpi{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:15px 17px;position:relative}
+.kpi::after{content:'';position:absolute;top:0;left:16px;right:16px;height:1px}
+.kpi-blue::after{background:var(--blue)}
+.kpi-green::after{background:var(--green)}
+.kpi-purple::after{background:var(--purple)}
+.kpi-amber::after{background:var(--amber)}
+.kpi-cyan::after{background:var(--cyan)}
+.kpi-red::after{background:var(--red)}
+.kpi-label{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
+.kpi-val{font-family:var(--mono);font-size:21px;font-weight:500;line-height:1}
+.kpi-sub{font-size:10px;color:var(--tx3);margin-top:5px}
+
+/* CHARTS */
+.crow{display:grid;gap:12px;margin-bottom:14px}
+.c2-1{grid-template-columns:2fr 1fr}
+.c3{grid-template-columns:1fr 1fr 1fr}
+.c2{grid-template-columns:1fr 1fr}
+
+/* ═══════════════════════════════════
+   SAISIE JOURNALIÈRE — LAYOUT UNIFIÉ
+   ═══════════════════════════════════ */
+.saisie-wrapper{display:grid;grid-template-columns:1fr 340px;gap:14px;align-items:start}
+.saisie-form{display:flex;flex-direction:column;gap:0}
+
+/* Step header */
+.step{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;margin-bottom:10px}
+.step-header{padding:12px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;transition:background .13s}
+.step-header:hover{background:var(--s2)}
+.step-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.step-title{font-size:13px;font-weight:600}
+.step-subtitle{font-size:11px;color:var(--tx3);margin-top:1px}
+.step-chevron{margin-left:auto;font-size:11px;color:var(--tx3);transition:transform .2s}
+.step.open .step-chevron{transform:rotate(180deg)}
+.step-body{padding:0 18px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease}
+.step.open .step-body{max-height:1000px;padding:0 18px 16px}
+
+/* Step colors */
+.step-1 .step-num{background:rgba(59,130,246,.15);color:var(--blue)}
+.step-1 .step-header{border-left:3px solid var(--blue)}
+.step-2 .step-num{background:var(--purple-g);color:var(--purple)}
+.step-2 .step-header{border-left:3px solid var(--purple)}
+.step-3 .step-num{background:var(--cyan-g);color:var(--cyan)}
+.step-3 .step-header{border-left:3px solid var(--cyan)}
+.step-4 .step-num{background:var(--amber-g);color:var(--amber)}
+.step-4 .step-header{border-left:3px solid var(--amber)}
+.step-5 .step-num{background:rgba(52,211,153,.12);color:var(--fdj)}
+.step-5 .step-header{border-left:3px solid var(--fdj)}
+
+/* FORM ELEMENTS */
+.frow{display:grid;gap:10px;margin-bottom:11px}
+.f1{grid-template-columns:1fr}
+.f2{grid-template-columns:1fr 1fr}
+.f3{grid-template-columns:1fr 1fr 1fr}
+.f4{grid-template-columns:1fr 1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:4px}
+.field input,.field select{background:var(--bg);border:1px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:var(--mono);font-size:12px;padding:8px 11px;width:100%;transition:all .14s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-g)}
+.field input[readonly]{cursor:default;color:var(--green);font-weight:500;background:var(--green-g);border-color:rgba(16,185,129,.2)}
+.field input.pub{color:var(--tx3);background:rgba(255,255,255,.02)}
+.field input.com{color:var(--purple);font-weight:600;background:var(--purple-g);border-color:rgba(167,139,250,.25);cursor:default}
+.field input.neg{color:var(--red);background:var(--red-g);border-color:rgba(239,68,68,.25)}
+.hdiv{height:1px;background:var(--bd);margin:13px 0}
+.section-lbl{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin:13px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--bd)}
+
+.save-big{width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#6366f1);color:#fff;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;border:none;letter-spacing:.01em;transition:all .15s;box-shadow:0 4px 20px rgba(59,130,246,.3)}
+.save-big:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(59,130,246,.45)}
+.save-big:active{transform:none}
+
+/* RECAP PANEL */
+.recap{position:sticky;top:0}
+.recap-date-header{padding:14px 18px;background:var(--s2);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.recap-date{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--tx)}
+.recap-jour{font-size:11px;color:var(--tx3)}
+.recap-lines{padding:14px 18px}
+.rl{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd)}
+.rl:last-child{border-bottom:none}
+.rl-label{font-size:11px;color:var(--tx2)}
+.rl-val{font-family:var(--mono);font-size:12px;font-weight:500}
+.rl.rl-main{padding:10px 0 4px;margin-top:6px;border-top:1px solid var(--bd2);border-bottom:none}
+.rl.rl-main .rl-label{font-size:12px;font-weight:600;color:var(--tx)}
+.rl.rl-main .rl-val{font-size:15px}
+.recap-info{padding:0 18px 14px;font-size:10px;color:var(--tx3);line-height:1.7}
+
+/* INFO BOXES */
+.ibox{border-radius:8px;padding:10px 14px;font-size:11px;line-height:1.7;margin-bottom:12px}
+.ibox-purple{background:var(--purple-g);border:1px solid rgba(167,139,250,.2);color:#c4b5fd}
+.ibox-cyan{background:var(--cyan-g);border:1px solid rgba(56,189,248,.18);color:#7dd3fc}
+.ibox-amber{background:var(--amber-g);border:1px solid rgba(245,158,11,.2);color:#fcd34d}
+.tva-badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px}
+.tva-10{background:var(--cyan-g);color:var(--cyan)}
+.tva-20{background:rgba(99,102,241,.1);color:#a5b4fc}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--bg);font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em;padding:8px 13px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+thead th.left{text-align:left}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--s2)}
+tbody td{padding:8px 13px;font-size:11px;text-align:right;font-family:var(--mono);color:var(--tx2);white-space:nowrap}
+tbody td.left{text-align:left;font-family:var(--sans)}
+.c-tx{color:var(--tx)}
+.c-gr{color:var(--green);font-weight:500}
+.c-pu{color:var(--purple);font-weight:500}
+.c-cy{color:var(--cyan)}
+.c-am{color:var(--amber)}
+.c-mu{color:var(--tx3)}
+.c-re{color:var(--red)}
+.c-po{color:var(--green)}
+tr.tr-week{background:rgba(59,130,246,.04);border-top:1px solid rgba(59,130,246,.15)!important;border-bottom:1px solid rgba(59,130,246,.15)!important}
+tr.tr-week td{color:var(--blue);font-size:10px;font-weight:500}
+tr.tr-total td{color:var(--green);font-weight:600;background:rgba(16,185,129,.04)}
+
+/* PARAMS */
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.pr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}
+.pr label{font-size:12px;color:var(--tx);flex:1}
+.pr-wrap{display:flex;align-items:center;gap:4px}
+.pr-wrap input{width:70px;background:var(--bg);border:1px solid var(--bd2);border-radius:6px;color:var(--green);font-family:var(--mono);font-size:12px;font-weight:500;padding:5px 8px;text-align:right}
+.pr-wrap input:focus{outline:none;border-color:var(--blue)}
+.pr-unit{font-size:10px;color:var(--tx3);font-family:var(--mono)}
+
+/* WEEK BLOCKS */
+.wb{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);margin-bottom:12px;overflow:hidden}
+.wb-head{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.wb-title{font-size:13px;font-weight:600}
+.wb-metrics{display:flex;gap:24px}
+.wm .wm-l{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em}
+.wm .wm-v{font-family:var(--mono);font-size:14px;font-weight:500;margin-top:2px}
+.wb-foot{padding:9px 18px;font-size:11px;color:var(--tx3);display:flex;gap:16px}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--s3);border:1px solid var(--bd2);border-radius:9px;padding:10px 16px;font-size:12px;font-weight:500;color:var(--green);display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);z-index:100;pointer-events:none}
+.toast.show{transform:none;opacity:1}
+
+/* FDJ ECART */
+.fdj-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🏪</div>
+    <div>
+      <div class="logo-name">Bar Tabac</div>
+      <div class="logo-sub">Outil de gestion</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="ng">
+      <div class="ng-label">Tableau de bord</div>
+      <button class="ni active" onclick="nav('dashboard')"><span>📊</span> Vue d'ensemble</button>
+    </div>
+    <div class="ng">
+      <div class="ng-label">Saisie</div>
+      <button class="ni" onclick="nav('saisie')"><span>✏️</span> Saisie du jour</button>
+    </div>
+    <div class="ng">
+      <div class="ng-label">Analyse métier</div>
+      <button class="ni" onclick="nav('tabac')"><span>🚬</span> Suivi Tabac <span class="dot dot-tabac"></span></button>
+      <button class="ni" onclick="nav('bar')"><span>🍺</span> Suivi Bar <span class="dot dot-bar"></span></button>
+      <button class="ni" onclick="nav('fdj')"><span>🎰</span> Suivi FDJ <span class="dot dot-fdj"></span></button>
+      <button class="ni" onclick="nav('synthese')"><span>📅</span> Synthèse hebdo</button>
+      <button class="ni" onclick="nav('historique')"><span>📋</span> Historique</button>
+    </div>
+    <div class="ng">
+      <div class="ng-label">Configuration</div>
+      <button class="ni" onclick="nav('params')"><span>⚙️</span> Paramètres</button>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="color:var(--tx2);font-weight:600;margin-bottom:3px">Taux actifs</div>
+    <div>Tabac <span id="sf-tabac" style="color:var(--purple);font-family:var(--mono)">8,35%</span></div>
+    <div>FDJ <span id="sf-fdj" style="color:var(--fdj);font-family:var(--mono)">5%</span> · Loto <span id="sf-loto" style="color:var(--fdj);font-family:var(--mono)">5%</span></div>
+    <div>Presse <span id="sf-presse" style="color:var(--amber);font-family:var(--mono)">13%</span></div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title" id="tt">Vue d'ensemble</div>
+      <div class="topbar-badge" id="tb">Janvier 2026</div>
+    </div>
+    <div class="topbar-right">
+      <select class="msel" id="sel-month" onchange="onMonth()">
+        <option value="2026-01">Janvier 2026</option>
+        <option value="2026-02">Février 2026</option>
+        <option value="2026-03" selected>Mars 2026</option>
+      </select>
+      <button class="btn btn-blue" onclick="exportCSV()">↓ CSV</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+  <!-- ══ DASHBOARD ══ -->
+  <div id="p-dashboard" class="panel active">
+    <div class="krow k5">
+      <div class="kpi kpi-blue"><div class="kpi-label">CA encaissé</div><div class="kpi-val" id="k-ca" style="color:var(--blue)">—</div><div class="kpi-sub" id="k-ca-s">—</div></div>
+      <div class="kpi kpi-purple"><div class="kpi-label">Revenu net buraliste</div><div class="kpi-val" id="k-rev" style="color:var(--purple)">—</div><div class="kpi-sub" id="k-rev-s">—</div></div>
+      <div class="kpi kpi-cyan"><div class="kpi-label">CA Bar</div><div class="kpi-val" id="k-bar" style="color:var(--cyan)">—</div><div class="kpi-sub" id="k-bar-s">—</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label">Commissions FDJ</div><div class="kpi-val" id="k-fdj" style="color:var(--fdj)">—</div><div class="kpi-sub">Inst. + Loto</div></div>
+      <div class="kpi kpi-amber"><div class="kpi-label">Solde espèces</div><div class="kpi-val" id="k-solde" style="color:var(--amber)">—</div><div class="kpi-sub">Théorique hors FDC</div></div>
+    </div>
+    <div class="crow c2-1">
+      <div class="card"><div class="card-head"><div class="card-title">CA journalier</div></div><div class="card-body"><canvas id="ch-ca" height="80"></canvas></div></div>
+      <div class="card"><div class="card-head"><div class="card-title">Revenu net par rayon</div></div><div class="card-body"><canvas id="ch-dough" height="160"></canvas></div></div>
+    </div>
+    <div class="crow c3">
+      <div class="card"><div class="card-head"><div class="card-title">CB vs Espèces (hebdo)</div></div><div class="card-body"><canvas id="ch-pmt" height="100"></canvas></div></div>
+      <div class="card"><div class="card-head"><div class="card-title">Commission tabac</div></div><div class="card-body"><canvas id="ch-tabac-d" height="100"></canvas></div></div>
+      <div class="card"><div class="card-head"><div class="card-title">Bar TVA 10% vs 20%</div></div><div class="card-body"><canvas id="ch-bar-tva" height="100"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- ══ SAISIE UNIFIÉE ══ -->
+  <div id="p-saisie" class="panel">
+    <div class="saisie-wrapper">
+
+      <!-- FORMULAIRE -->
+      <div class="saisie-form">
+
+        <!-- ÉTAPE 1 : CAISSE -->
+        <div class="step step-1 open" id="st1">
+          <div class="step-header" onclick="toggleStep('st1')">
+            <div class="step-num">1</div>
+            <div><div class="step-title">Caisse du jour</div><div class="step-subtitle">Date, encaissements, dépôt banque</div></div>
+            <span class="step-chevron">▼</span>
+          </div>
+          <div class="step-body">
+            <div class="frow f3" style="margin-top:4px">
+              <div class="field"><label>Date</label><input type="date" id="s-date" onchange="onDateChange()"></div>
+              <div class="field"><label>Jour</label><input type="text" id="s-jour" readonly class="pub" style="cursor:default"></div>
+              <div class="field"><label>Nb tickets caisse</label><input type="number" id="s-tickets" placeholder="0" oninput="calcRecap()"></div>
+            </div>
+            <div class="section-lbl">Encaissements</div>
+            <div class="frow f3">
+              <div class="field"><label>CB (€)</label><input type="number" id="s-cb" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Espèces (€)</label><input type="number" id="s-esp" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Chèque (€)</label><input type="number" id="s-chq" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+            </div>
+            <div class="section-lbl">Gestion espèces</div>
+            <div class="frow f3">
+              <div class="field"><label>Dépôt banque (€)</label><input type="number" id="s-depot" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Fond de caisse (€)</label><input type="number" id="s-fdc" step="0.01" placeholder="88" oninput="calcRecap()"></div>
+              <div class="field"><label>Commentaire</label><input type="text" id="s-comment" placeholder="PMU, monnaie…"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ÉTAPE 2 : TABAC & FDJ -->
+        <div class="step step-2 open" id="st2">
+          <div class="step-header" onclick="toggleStep('st2')">
+            <div class="step-num">2</div>
+            <div><div class="step-title">Tabac & FDJ</div><div class="step-subtitle">Prix public tabac, jeux instantanés, loto</div></div>
+            <span class="step-chevron">▼</span>
+          </div>
+          <div class="step-body">
+            <div class="ibox ibox-purple" style="margin-top:4px">
+              🚬 Saisir le <strong>prix public encaissé</strong>. Le revenu buraliste (commission ~8,35%) est calculé automatiquement.
+            </div>
+            <div class="frow f3">
+              <div class="field"><label>Tabac — prix public (€)</label><input type="number" id="s-tabac" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Jeux instantanés (€)</label><input type="number" id="s-jeux" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Loto (€)</label><input type="number" id="s-loto" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+            </div>
+            <div class="frow f2">
+              <div class="field"><label>Commission tabac (€) <span style="color:var(--purple);font-size:9px">auto</span></label><input type="text" id="s-tabac-com" readonly class="com"></div>
+              <div class="field"><label>Commission FDJ (€) <span style="color:var(--fdj);font-size:9px">auto</span></label><input type="text" id="s-fdj-com" readonly style="color:var(--fdj);background:rgba(52,211,153,.07);border-color:rgba(52,211,153,.2);cursor:default"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ÉTAPE 3 : BAR -->
+        <div class="step step-3 open" id="st3">
+          <div class="step-header" onclick="toggleStep('st3')">
+            <div class="step-num">3</div>
+            <div><div class="step-title">Bar</div><div class="step-subtitle">Consommations sur place et à emporter</div></div>
+            <span class="step-chevron">▼</span>
+          </div>
+          <div class="step-body">
+            <div class="ibox ibox-cyan" style="margin-top:4px">
+              🍺 CA bar conservé <strong>intégralement</strong> — pas de commission, c'est votre revenu direct.
+            </div>
+            <div class="frow f3">
+              <div class="field"><label>Bar TVA 10% <span class="tva-badge tva-10">10%</span></label><input type="number" id="s-bar10" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Bar TVA 20% <span class="tva-badge tva-20">20%</span></label><input type="number" id="s-bar20" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Boissons à emporter (€)</label><input type="number" id="s-boissons" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+            </div>
+            <div class="field"><label>CA bar du jour (€) <span style="color:var(--cyan);font-size:9px">auto</span></label><input type="text" id="s-bar-tot" readonly style="color:var(--cyan);background:var(--cyan-g);border-color:rgba(56,189,248,.2);cursor:default"></div>
+          </div>
+        </div>
+
+        <!-- ÉTAPE 4 : AUTRES RAYONS -->
+        <div class="step step-4" id="st4">
+          <div class="step-header" onclick="toggleStep('st4')">
+            <div class="step-num">4</div>
+            <div><div class="step-title">Autres rayons</div><div class="step-subtitle">Presse, accessoires, confiserie, divers…</div></div>
+            <span class="step-chevron">▼</span>
+          </div>
+          <div class="step-body">
+            <div class="frow f4" style="margin-top:4px">
+              <div class="field"><label>Presse (€)</label><input type="number" id="s-presse" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Papier & tubes (€)</label><input type="number" id="s-papier" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Acc. fumeurs (€)</label><input type="number" id="s-fumeurs" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Confiserie (€)</label><input type="number" id="s-confiserie" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+            </div>
+            <div class="frow f4">
+              <div class="field"><label>Carterie (€)</label><input type="number" id="s-carterie" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Chewing-gum (€)</label><input type="number" id="s-chewing" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Divers (€)</label><input type="number" id="s-divers" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Monétique (€)</label><input type="number" id="s-monetique" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+            </div>
+            <div class="frow f3">
+              <div class="field"><label>Téléphonie (€)</label><input type="number" id="s-tel" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Timbres (€)</label><input type="number" id="s-timbres" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+              <div class="field"><label>Cadeaux (€)</label><input type="number" id="s-cadeaux" step="0.01" placeholder="0,00" oninput="calcRecap()"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ÉTAPE 5 : RÉCONCILIATION FDJ -->
+        <div class="step step-5" id="st5">
+          <div class="step-header" onclick="toggleStep('st5')">
+            <div class="step-num">5</div>
+            <div><div class="step-title">Réconciliation FDJ</div><div class="step-subtitle">Comparer STRATOR vs NOTILUS — optionnel</div></div>
+            <span class="step-chevron">▼</span>
+          </div>
+          <div class="step-body">
+            <div class="ibox" style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.18);color:#6ee7b7;margin-top:4px">
+              Comparez <strong>STRATOR</strong> (votre caisse) avec <strong>NOTILUS</strong> (FDJ officielle). Les écarts sont calculés automatiquement. Un écart non nul mérite vérification.
+            </div>
+            <div class="section-lbl">STRATOR — votre caisse</div>
+            <div class="frow f4">
+              <div class="field"><label>Jeux vendus</label><input type="number" id="fs-vendus" step="0.01" placeholder="0" oninput="fdjCalc()"></div>
+              <div class="field"><label>Jeux remboursés</label><input type="number" id="fs-rembj" step="0.01" placeholder="0" oninput="fdjCalc()"></div>
+              <div class="field"><label>Loto joué</label><input type="number" id="fs-lotoj" step="0.01" placeholder="0" oninput="fdjCalc()"></div>
+              <div class="field"><label>Loto remboursé</label><input type="number" id="fs-lotor" step="0.01" placeholder="0" oninput="fdjCalc()"></div>
+            </div>
+            <div class="section-lbl">NOTILUS — FDJ officielle</div>
+            <div class="frow f3">
+              <div class="field"><label>Jeux remboursés</label><input type="number" id="fn-rembj" step="0.01" placeholder="0" oninput="fdjCalc()"></div>
+              <div class="field"><label>Loto joué</label><input type="number" id="fn-lotoj" step="0.01" placeholder="0" oninput="fdjCalc()"></div>
+              <div class="field"><label>Loto remboursé</label><input type="number" id="fn-lotor" step="0.01" placeholder="0" oninput="fdjCalc()"></div>
+            </div>
+            <div class="hdiv"></div>
+            <div class="frow f3">
+              <div class="field"><label>Écart jeux remb.</label><input type="text" id="fdj-ej" readonly></div>
+              <div class="field"><label>Écart loto joué</label><input type="text" id="fdj-elj" readonly></div>
+              <div class="field"><label>Écart loto remb.</label><input type="text" id="fdj-elr" readonly></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="save-big" onclick="saveJour()">💾 Enregistrer la journée complète</button>
+      </div>
+
+      <!-- RÉCAPITULATIF TEMPS RÉEL -->
+      <div class="recap">
+        <div class="card" style="margin-bottom:0">
+          <div class="recap-date-header">
+            <div>
+              <div class="recap-jour" id="recap-jour">Sélectionnez une date</div>
+              <div class="recap-date" id="recap-date">—</div>
+            </div>
+            <div id="recap-status" style="font-size:10px;color:var(--tx3)">Non enregistré</div>
+          </div>
+          <div class="recap-lines">
+            <div class="rl"><span class="rl-label">CB + Esp. + Chèque</span><span class="rl-val" id="rc-total" style="color:var(--blue)">—</span></div>
+            <div class="rl"><span class="rl-label">dont espèces</span><span class="rl-val" id="rc-esp" style="color:var(--tx2)">—</span></div>
+            <div class="rl"><span class="rl-label">Solde esp. théorique</span><span class="rl-val" id="rc-solde" style="color:var(--amber)">—</span></div>
+            <div class="hdiv" style="margin:8px 0"></div>
+            <div class="rl"><span class="rl-label">Prix public tabac</span><span class="rl-val" id="rc-tabac-pub" style="color:var(--tx3);text-decoration:line-through">—</span></div>
+            <div class="rl"><span class="rl-label">↳ Commission tabac</span><span class="rl-val" id="rc-tabac-com" style="color:var(--purple)">—</span></div>
+            <div class="rl"><span class="rl-label">Commission FDJ</span><span class="rl-val" id="rc-fdj" style="color:var(--fdj)">—</span></div>
+            <div class="rl"><span class="rl-label">CA bar</span><span class="rl-val" id="rc-bar" style="color:var(--cyan)">—</span></div>
+            <div class="rl"><span class="rl-label">Presse + autres</span><span class="rl-val" id="rc-autres" style="color:var(--tx2)">—</span></div>
+            <div class="rl rl-main"><span class="rl-label">CA total encaissé</span><span class="rl-val" id="rc-ca" style="color:var(--blue)">—</span></div>
+            <div class="rl rl-main"><span class="rl-label">Revenu net buraliste</span><span class="rl-val" id="rc-rev" style="color:var(--green)">—</span></div>
+          </div>
+          <div class="recap-info" id="recap-info">Remplissez les sections pour voir le récapitulatif en temps réel.</div>
+        </div>
+
+        <!-- Dernières saisies mini -->
+        <div class="card" style="margin-top:12px">
+          <div class="card-head"><div class="card-title">Dernières saisies</div></div>
+          <div id="recap-recent" style="padding:10px 18px;font-size:11px;color:var(--tx3)">—</div>
+        </div>
+      </div>
+
+    </div><!-- saisie-wrapper -->
+  </div>
+
+  <!-- FDJ intégré dans Saisie du jour (étape 5) -->
+
+  <!-- ══ SUIVI TABAC ══ -->
+  <div id="p-tabac" class="panel">
+    <div class="ibox ibox-purple" style="margin-bottom:16px">
+      🚬 <strong>Rappel :</strong> le buraliste n'est pas propriétaire du stock tabac. Son revenu = remise nette sur prix public (~8,35%). Le CA encaissé est un transit — seule la commission compte dans le résultat.
+    </div>
+    <div class="krow k4">
+      <div class="kpi kpi-red"><div class="kpi-label">Prix public encaissé</div><div class="kpi-val" id="t-pub" style="color:var(--tx3)">—</div><div class="kpi-sub">Transit — non conservé</div></div>
+      <div class="kpi kpi-purple"><div class="kpi-label">Commission buraliste</div><div class="kpi-val" id="t-com" style="color:var(--purple)">—</div><div class="kpi-sub" id="t-com-s">—</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label">Commissions FDJ</div><div class="kpi-val" id="t-fdj" style="color:var(--fdj)">—</div><div class="kpi-sub">Inst. + Loto</div></div>
+      <div class="kpi kpi-amber"><div class="kpi-label">Total revenus réglementés</div><div class="kpi-val" id="t-reg" style="color:var(--amber)">—</div><div class="kpi-sub">Tabac + FDJ + Presse</div></div>
+    </div>
+    <div class="crow c2">
+      <div class="card"><div class="card-head"><div class="card-title">Commission tabac journalière</div></div><div class="card-body"><canvas id="ch-t-com" height="100"></canvas></div></div>
+      <div class="card"><div class="card-head"><div class="card-title">Structure revenus réglementés</div></div><div class="card-body"><canvas id="ch-t-struct" height="180"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Détail journalier — Tabac & FDJ</div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th class="left">Jour</th><th class="left">Date</th>
+          <th>Prix public</th><th>Commission</th>
+          <th>FDJ inst.</th><th>Com. FDJ</th>
+          <th>Loto</th><th>Com. loto</th>
+          <th>Presse</th><th>Com. presse</th>
+          <th>Total commissions</th>
+        </tr></thead>
+        <tbody id="t-tbody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ SUIVI BAR ══ -->
+  <div id="p-bar" class="panel">
+    <div class="ibox ibox-cyan" style="margin-bottom:16px">
+      🍺 <strong>TVA :</strong> boissons sur place (10% softs/café/bière, 20% alcools forts) vs à emporter. Le CA bar est votre revenu direct — pas de commission.
+    </div>
+    <div class="krow k4">
+      <div class="kpi kpi-cyan"><div class="kpi-label">CA Bar total</div><div class="kpi-val" id="b-tot" style="color:var(--cyan)">—</div><div class="kpi-sub" id="b-tot-s">—</div></div>
+      <div class="kpi kpi-blue"><div class="kpi-label">Bar TVA 10%</div><div class="kpi-val" id="b-10" style="color:#7dd3fc">—</div><div class="kpi-sub" id="b-10-s">—</div></div>
+      <div class="kpi" style="border-color:var(--bd)"><div class="kpi-label">Bar TVA 20%</div><div class="kpi-val" id="b-20" style="color:#a5b4fc">—</div><div class="kpi-sub" id="b-20-s">—</div><div style="position:absolute;top:0;left:16px;right:16px;height:1px;background:#818cf8"></div></div>
+      <div class="kpi kpi-green"><div class="kpi-label">Ticket moyen bar</div><div class="kpi-val" id="b-tk" style="color:var(--green)">—</div><div class="kpi-sub">CA bar / nb tickets</div></div>
+    </div>
+    <div class="crow c2">
+      <div class="card"><div class="card-head"><div class="card-title">CA Bar journalier</div></div><div class="card-body"><canvas id="ch-b-jour" height="100"></canvas></div></div>
+      <div class="card"><div class="card-head"><div class="card-title">Répartition TVA</div></div><div class="card-body"><canvas id="ch-b-pie" height="180"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Détail journalier — Bar</div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th class="left">Jour</th><th class="left">Date</th>
+          <th>Bar 10%</th><th>Bar 20%</th><th>À emporter</th>
+          <th>CA bar</th><th>% du CA</th><th>Tickets</th>
+        </tr></thead>
+        <tbody id="b-tbody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ SUIVI FDJ ══ -->
+  <div id="p-fdj" class="panel">
+    <div class="ibox" style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.18);color:#6ee7b7;margin-bottom:16px">
+      🎰 <strong>Réconciliation FDJ :</strong> comparaison quotidienne STRATOR (votre caisse) vs NOTILUS (système FDJ officiel). Les écarts sont saisis lors de la <strong>Saisie du jour — Étape 5</strong>. Un écart négatif = NOTILUS déclare plus que STRATOR.
+    </div>
+    <div class="krow k4">
+      <div class="kpi" style="border-color:var(--bd)"><div style="position:absolute;top:0;left:16px;right:16px;height:1px;background:var(--fdj)"></div>
+        <div class="kpi-label">Jours réconciliés</div><div class="kpi-val" id="f-jours" style="color:var(--fdj)">—</div><div class="kpi-sub" id="f-jours-s">—</div>
+      </div>
+      <div class="kpi kpi-green"><div class="kpi-label">Jours sans écart</div><div class="kpi-val" id="f-ok" style="color:var(--green)">—</div><div class="kpi-sub">Concordance parfaite</div></div>
+      <div class="kpi kpi-red"><div class="kpi-label">Jours avec écart</div><div class="kpi-val" id="f-ko" style="color:var(--red)">—</div><div class="kpi-sub">À vérifier</div></div>
+      <div class="kpi kpi-amber"><div class="kpi-label">Jeux vendus (total)</div><div class="kpi-val" id="f-vendus" style="color:var(--amber)">—</div><div class="kpi-sub">Période sélectionnée</div></div>
+    </div>
+    <div class="crow c2">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Écart jeux remboursés journalier</div></div>
+        <div class="card-body"><canvas id="ch-fdj-ej" height="100"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Statut réconciliation par jour</div></div>
+        <div class="card-body"><canvas id="ch-fdj-status" height="180"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Détail des écarts</div>
+        <span id="fdj-badge" style="font-size:10px;color:var(--tx3)">0 entrées</span>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th class="left">Jour</th><th class="left">Date</th>
+          <th>Jeux vendus</th>
+          <th>Remb. STRATOR</th><th>Remb. NOTILUS</th><th>Écart jeux</th>
+          <th>Loto STRATOR</th><th>Loto NOTILUS</th><th>Écart loto</th>
+          <th>Statut</th>
+        </tr></thead>
+        <tbody id="fdj-tbody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ SYNTHESE ══ -->
+  <div id="p-synthese" class="panel"><div id="synthese-body"></div></div>
+
+  <!-- ══ HISTORIQUE ══ -->
+  <div id="p-historique" class="panel">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Historique complet</div><span id="histo-badge" style="font-size:10px;color:var(--tx3)">0 jours</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th class="left">Jour</th><th class="left">Date</th>
+          <th>Tabac pub.</th><th>Com. tabac</th>
+          <th>FDJ inst.</th><th>Loto</th>
+          <th>Bar 10%</th><th>Bar 20%</th>
+          <th>Presse</th><th>Autres</th>
+          <th>CA total</th><th>Revenu net</th><th>Tickets</th>
+        </tr></thead>
+        <tbody id="histo-tbody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ PARAMS ══ -->
+  <div id="p-params" class="panel">
+    <div class="pg">
+      <div class="card"><div class="card-head"><div class="card-title">🚬 Tabac & Presse</div></div><div class="card-body">
+        <div class="pr"><label>Remise nette tabac</label><div class="pr-wrap"><input type="number" id="param-tabac" value="8.35" step="0.01" min="0" max="100" oninput="saveParams()"><span class="pr-unit">%</span></div></div>
+        <div class="pr"><label>Marge presse</label><div class="pr-wrap"><input type="number" id="param-presse" value="13" step="0.1" min="0" max="100" oninput="saveParams()"><span class="pr-unit">%</span></div></div>
+      </div></div>
+      <div class="card"><div class="card-head"><div class="card-title">🎰 FDJ</div></div><div class="card-body">
+        <div class="pr"><label>Jeux instantanés</label><div class="pr-wrap"><input type="number" id="param-jeux" value="5" step="0.1" min="0" max="100" oninput="saveParams()"><span class="pr-unit">%</span></div></div>
+        <div class="pr"><label>Loto</label><div class="pr-wrap"><input type="number" id="param-loto" value="5" step="0.1" min="0" max="100" oninput="saveParams()"><span class="pr-unit">%</span></div></div>
+        <div class="pr"><label>Monétique</label><div class="pr-wrap"><input type="number" id="param-monetique" value="1" step="0.1" min="0" max="100" oninput="saveParams()"><span class="pr-unit">%</span></div></div>
+      </div></div>
+      <div class="card"><div class="card-head"><div class="card-title">🍺 Bar & Autres</div></div><div class="card-body">
+        <div class="ibox ibox-cyan" style="margin-bottom:0">Bar, Accessoires, Confiserie, Papier, Divers, Carterie, Téléphonie, Timbres, Cadeaux : comptés à <strong>100%</strong> — vous conservez intégralement ces revenus.</div>
+      </div></div>
+    </div>
+    <div style="margin-top:12px;padding:13px 16px;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);font-size:11px;color:var(--tx3);line-height:1.7">ℹ️ Toute modification est répercutée immédiatement sur tous les calculs. Ajustez ici en cas de changement réglementaire.</div>
+  </div>
+
+  </div><!-- content -->
+</div><!-- main -->
+</div><!-- app -->
+
+<div id="toast" class="toast">✓ <span id="toast-msg">Enregistré</span></div>
+
+<script>
+// ════════════════════════════════════
+// DATA
+// ════════════════════════════════════
+const JOURS=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const MOIS=['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+let DB={
+  jours:[ // saisie unifiée
+    {date:'2026-01-02',tickets:324,cb:2806.55,esp:1669.15,chq:0,depot:0,fdc:137,comment:'',tabac:2932.3,jeux:1568,loto:885.1,bar10:92.1,bar20:54.5,boissons:0,presse:4.8,papier:5,fumeurs:49,confiserie:0,carterie:0,chewing:0,divers:10.3,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-01-03',tickets:273,cb:2771.15,esp:1322.35,chq:0,depot:0,fdc:88,comment:'',tabac:3039.1,jeux:1535,loto:795.7,bar10:53.9,bar20:70.3,boissons:0,presse:2.4,papier:2.5,fumeurs:13.8,confiserie:0,carterie:0,chewing:0,divers:11,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-01-04',tickets:253,cb:1606.25,esp:778.8,chq:0,depot:0,fdc:88,comment:'',tabac:1601.8,jeux:1548,loto:829.4,bar10:55.6,bar20:48.6,boissons:0,presse:5.7,papier:0,fumeurs:17,confiserie:0,carterie:0,chewing:0,divers:10.6,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-01-05',tickets:404,cb:3970.3,esp:1629.2,chq:0,depot:4930,fdc:88,comment:'',tabac:4099.5,jeux:1945,loto:1021.6,bar10:83.7,bar20:50.2,boissons:0,presse:5.7,papier:5,fumeurs:48,confiserie:0,carterie:0,chewing:0,divers:17,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-01-06',tickets:263,cb:2600.35,esp:670,chq:0,depot:0,fdc:88,comment:'',tabac:2689.65,jeux:1565,loto:732.1,bar10:87.6,bar20:24.5,boissons:0,presse:1.9,papier:2.5,fumeurs:6.8,confiserie:0,carterie:0,chewing:0,divers:13.5,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-01-07',tickets:247,cb:2002.85,esp:1600.05,chq:0,depot:0,fdc:88,comment:'',tabac:2156.1,jeux:1521,loto:792.1,bar10:73.5,bar20:59.1,boissons:0,presse:11.4,papier:0,fumeurs:6.1,confiserie:0,carterie:0,chewing:0,divers:9.5,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-01-09',tickets:317,cb:2540.75,esp:1137,chq:80,depot:0,fdc:88,comment:'',tabac:1955.9,jeux:2103,loto:1053.3,bar10:156.1,bar20:113.4,boissons:0,presse:2.4,papier:0,fumeurs:20.5,confiserie:0,carterie:0,chewing:0,divers:22.5,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-01-10',tickets:0,cb:2096.5,esp:1110.45,chq:0,depot:3220,fdc:88,comment:'',tabac:1413.65,jeux:2600,loto:778.9,bar10:287.1,bar20:270.3,boissons:0,presse:4.8,papier:0,fumeurs:5,confiserie:0,carterie:0,chewing:0,divers:49.3,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-01-12',tickets:451,cb:4501.3,esp:2805.25,chq:26,depot:0,fdc:73,comment:'',tabac:4835.65,jeux:2568,loto:1431.1,bar10:225.4,bar20:119.6,boissons:0,presse:9.5,papier:7.5,fumeurs:4,confiserie:0,carterie:0,chewing:0,divers:44.1,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-03-02',tickets:320,cb:4007.18,esp:2711.75,chq:0,depot:12000,fdc:0,comment:'',tabac:3200,jeux:1800,loto:900,bar10:140,bar20:80,boissons:0,presse:9,papier:6,fumeurs:28,confiserie:2,carterie:0,chewing:0,divers:18,monetique:200,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-03-03',tickets:295,cb:3531.54,esp:1696.59,chq:0,depot:0,fdc:0,comment:'',tabac:2950,jeux:1650,loto:820,bar10:115,bar20:68,boissons:0,presse:7,papier:3,fumeurs:20,confiserie:0,carterie:0,chewing:0,divers:14,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-03-04',tickets:260,cb:2904.44,esp:1767.53,chq:0,depot:0,fdc:0,comment:'',tabac:2700,jeux:1500,loto:750,bar10:100,bar20:55,boissons:0,presse:6,papier:2,fumeurs:16,confiserie:0,carterie:0,chewing:0,divers:12,monetique:0,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-03-06',tickets:410,cb:4088.93,esp:2882.54,chq:0,depot:0,fdc:0,comment:'',tabac:4100,jeux:2200,loto:1100,bar10:195,bar20:110,boissons:0,presse:15,papier:9,fumeurs:42,confiserie:3,carterie:0,chewing:0,divers:25,monetique:350,tel:0,timbres:0,cadeaux:0},
+    {date:'2026-03-07',tickets:350,cb:3107,esp:1958.95,chq:0,depot:0,fdc:0,comment:'',tabac:3500,jeux:1900,loto:950,bar10:160,bar20:90,boissons:0,presse:11,papier:5,fumeurs:32,confiserie:0,carterie:0,chewing:0,divers:20,monetique:180,tel:0,timbres:0,cadeaux:0},
+  ],
+  fdj:[]
+};
+
+// ════════════════════════════════════
+// UTILS
+// ════════════════════════════════════
+const $=id=>document.getElementById(id);
+const N=v=>parseFloat(v)||0;
+const fE=v=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' €';
+const fN=v=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);
+const J=d=>JOURS[new Date(d+'T12:00:00').getDay()];
+const mon=()=>$('sel-month').value;
+const rows=m=>DB.jours.filter(r=>r.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
+
+function P(){return{
+  tabac:N($('param-tabac')?.value||8.35)/100,
+  presse:N($('param-presse')?.value||13)/100,
+  jeux:N($('param-jeux')?.value||5)/100,
+  loto:N($('param-loto')?.value||5)/100,
+  monetique:N($('param-monetique')?.value||1)/100
+};}
+
+function caTotal(r){
+  return r.tabac+r.jeux+r.loto+r.bar10+r.bar20+r.boissons+r.presse
+        +r.papier+r.fumeurs+r.confiserie+r.carterie+r.chewing
+        +r.divers+r.monetique+r.tel+r.timbres+r.cadeaux;
+}
+function revNet(r,p){
+  return r.tabac*p.tabac+r.jeux*p.jeux+r.loto*p.loto
+        +r.presse*p.presse+r.monetique*p.monetique
+        +r.bar10+r.bar20+r.boissons+r.papier+r.fumeurs
+        +r.confiserie+r.carterie+r.chewing+r.divers+r.tel+r.timbres+r.cadeaux;
+}
+function barTot(r){return r.bar10+r.bar20+r.boissons;}
+
+function weekGroup(rs){
+  const w={};
+  rs.forEach(r=>{
+    const d=new Date(r.date+'T12:00:00'),m=new Date(d);
+    m.setDate(d.getDate()-((d.getDay()+6)%7));
+    const k=m.toISOString().slice(0,10);
+    if(!w[k])w[k]=[];w[k].push(r);
+  });
+  return w;
+}
+
+function toast(msg){
+  const t=$('toast');$('toast-msg').textContent=msg;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);
+}
+function set(id,v){const el=$(id);if(el)el.textContent=v;}
+
+// ════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════
+const TITLES={dashboard:'Vue d\'ensemble',saisie:'Saisie du jour',tabac:'Suivi Tabac',bar:'Suivi Bar',fdj:'Suivi FDJ',synthese:'Synthèse hebdomadaire',historique:'Historique',params:'Paramètres'};
+let cur='dashboard';
+
+function nav(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
+  $('p-'+name).classList.add('active');
+  document.querySelectorAll('.ni').forEach(b=>{if(b.getAttribute('onclick')===`nav('${name}')`)b.classList.add('active');});
+  $('tt').textContent=TITLES[name]; cur=name;
+  renderBadge();
+  const fn={dashboard:renderDashboard,tabac:renderTabac,bar:renderBar,fdj:renderFDJ,synthese:renderSynthese,historique:renderHistorique,saisie:()=>{calcRecap();renderRecent();}};
+  if(fn[name])fn[name]();
+}
+
+function renderBadge(){
+  const[yr,mo]=mon().split('-').map(Number);
+  $('tb').textContent=MOIS[mo]+' '+yr;
+}
+function onMonth(){renderBadge();const fn={dashboard:renderDashboard,tabac:renderTabac,bar:renderBar,synthese:renderSynthese,historique:renderHistorique};if(fn[cur])fn[cur]();}
+
+// ════════════════════════════════════
+// STEP ACCORDION
+// ════════════════════════════════════
+function toggleStep(id){
+  const s=$(id);s.classList.toggle('open');
+}
+
+// ════════════════════════════════════
+// SAISIE UNIFIÉE
+// ════════════════════════════════════
+function onDateChange(){
+  const d=$('s-date').value;
+  if(d){
+    $('s-jour').value=J(d);
+    // Pré-remplir si existe
+    const ex=DB.jours.find(r=>r.date===d);
+    if(ex) prefill(ex);
+    else clearFields();
+    // Prefill FDJ if exists
+    const exFDJ=DB.fdj.find(f=>f.date===d);
+    if(exFDJ) prefillFDJ(exFDJ); else clearFDJ();
+  }
+  calcRecap();
+}
+
+function prefill(r){
+  const map={
+    's-cb':r.cb,'s-esp':r.esp,'s-chq':r.chq,'s-tickets':r.tickets,
+    's-depot':r.depot,'s-fdc':r.fdc,'s-comment':r.comment,
+    's-tabac':r.tabac,'s-jeux':r.jeux,'s-loto':r.loto,
+    's-bar10':r.bar10,'s-bar20':r.bar20,'s-boissons':r.boissons,
+    's-presse':r.presse,'s-papier':r.papier,'s-fumeurs':r.fumeurs,
+    's-confiserie':r.confiserie,'s-carterie':r.carterie,'s-chewing':r.chewing,
+    's-divers':r.divers,'s-monetique':r.monetique,'s-tel':r.tel,
+    's-timbres':r.timbres,'s-cadeaux':r.cadeaux
+  };
+  Object.entries(map).forEach(([id,v])=>{const el=$(id);if(el)el.value=v||'';});
+  $('recap-status').textContent='✓ Données chargées';
+  $('recap-status').style.color='var(--green)';
+}
+
+function clearFields(){
+  ['s-cb','s-esp','s-chq','s-tickets','s-depot','s-fdc','s-comment',
+   's-tabac','s-jeux','s-loto','s-bar10','s-bar20','s-boissons',
+   's-presse','s-papier','s-fumeurs','s-confiserie','s-carterie',
+   's-chewing','s-divers','s-monetique','s-tel','s-timbres','s-cadeaux']
+  .forEach(id=>{const el=$(id);if(el&&id!=='s-comment')el.value='';else if(el)el.value='';});
+  $('recap-status').textContent='Non enregistré';
+  $('recap-status').style.color='var(--tx3)';
+}
+
+function prefillFDJ(r){
+  const map={'fs-vendus':r.s_vendus,'fs-rembj':r.s_rembj,'fs-lotoj':r.s_lotoj,'fs-lotor':r.s_lotor,'fn-rembj':r.n_rembj,'fn-lotoj':r.n_lotoj,'fn-lotor':r.n_lotor};
+  Object.entries(map).forEach(([id,v])=>{const el=$(id);if(el)el.value=v||'';});
+  fdjCalc();
+}
+function clearFDJ(){
+  ['fs-vendus','fs-rembj','fs-lotoj','fs-lotor','fn-rembj','fn-lotoj','fn-lotor'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['fdj-ej','fdj-elj','fdj-elr'].forEach(id=>{const el=$(id);if(el){el.value='';el.style.color='';el.style.background='';el.style.borderColor='';}});
+}
+
+function calcRecap(){
+  const p=P();
+  const date=$('s-date').value;
+  const cb=N($('s-cb')?.value),esp=N($('s-esp')?.value),chq=N($('s-chq')?.value);
+  const depot=N($('s-depot')?.value),fdc=N($('s-fdc')?.value);
+  const tabac=N($('s-tabac')?.value),jeux=N($('s-jeux')?.value),loto=N($('s-loto')?.value);
+  const bar10=N($('s-bar10')?.value),bar20=N($('s-bar20')?.value),boissons=N($('s-boissons')?.value);
+  const presse=N($('s-presse')?.value),papier=N($('s-papier')?.value),fumeurs=N($('s-fumeurs')?.value);
+  const confiserie=N($('s-confiserie')?.value),carterie=N($('s-carterie')?.value),chewing=N($('s-chewing')?.value);
+  const divers=N($('s-divers')?.value),monetique=N($('s-monetique')?.value),tel=N($('s-tel')?.value);
+  const timbres=N($('s-timbres')?.value),cadeaux=N($('s-cadeaux')?.value);
+
+  // Caisse
+  const totalCaisse=cb+esp+chq;
+  const m=mon();
+  const prev=DB.jours.filter(r=>r.date<date&&r.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
+  let solde=0;prev.forEach(r=>solde+=(r.esp||0)-(r.depot||0)-(r.fdc||0));
+  solde+=esp-depot-fdc;
+
+  // Tabac
+  const tabacCom=tabac*p.tabac;
+  const fdjCom=jeux*p.jeux+loto*p.loto;
+  $('s-tabac-com').value=fN(tabacCom);
+  $('s-fdj-com').value=fN(fdjCom);
+
+  // Bar
+  const barT=bar10+bar20+boissons;
+  $('s-bar-tot').value=fN(barT);
+
+  // CA & rev
+  const r={tabac,jeux,loto,bar10,bar20,boissons,presse,papier,fumeurs,confiserie,carterie,chewing,divers,monetique,tel,timbres,cadeaux};
+  const ca=caTotal(r);
+  const rev=revNet(r,p);
+  const autres=presse*p.presse+papier+fumeurs+confiserie+carterie+chewing+divers+monetique*p.monetique+tel+timbres+cadeaux;
+
+  // Recap panel
+  const d=date||'—';
+  $('recap-date').textContent=d;
+  $('recap-jour').textContent=date?J(date):'Sélectionnez une date';
+
+  set('rc-total',ca>0?fE(totalCaisse):'—');
+  set('rc-esp',esp>0?fE(esp):'—');
+  const soldeEl=$('rc-solde');if(soldeEl){soldeEl.textContent=esp>0?fE(solde):'—';soldeEl.style.color=solde<0?'var(--red)':'var(--amber)';}
+  set('rc-tabac-pub',tabac>0?fE(tabac):'—');
+  set('rc-tabac-com',tabacCom>0?fE(tabacCom):'—');
+  set('rc-fdj',fdjCom>0?fE(fdjCom):'—');
+  set('rc-bar',barT>0?fE(barT):'—');
+  set('rc-autres',autres>0?fE(autres):'—');
+  set('rc-ca',ca>0?fE(ca):'—');
+  set('rc-rev',rev>0?fE(rev):'—');
+
+  if(ca>0){
+    const tx=(rev/ca*100).toFixed(2);
+    $('recap-info').textContent=`Revenu net = ${tx}% du CA encaissé`;
+  } else {
+    $('recap-info').textContent='Remplissez les sections pour voir le récapitulatif.';
+  }
+}
+
+function saveJour(){
+  const date=$('s-date').value;
+  if(!date){toast('⚠ Sélectionnez une date');return;}
+  const r={
+    date,tickets:N($('s-tickets')?.value),
+    cb:N($('s-cb')?.value),esp:N($('s-esp')?.value),chq:N($('s-chq')?.value),
+    depot:N($('s-depot')?.value),fdc:N($('s-fdc')?.value),comment:$('s-comment')?.value||'',
+    tabac:N($('s-tabac')?.value),jeux:N($('s-jeux')?.value),loto:N($('s-loto')?.value),
+    bar10:N($('s-bar10')?.value),bar20:N($('s-bar20')?.value),boissons:N($('s-boissons')?.value),
+    presse:N($('s-presse')?.value),papier:N($('s-papier')?.value),fumeurs:N($('s-fumeurs')?.value),
+    confiserie:N($('s-confiserie')?.value),carterie:N($('s-carterie')?.value),chewing:N($('s-chewing')?.value),
+    divers:N($('s-divers')?.value),monetique:N($('s-monetique')?.value),tel:N($('s-tel')?.value),
+    timbres:N($('s-timbres')?.value),cadeaux:N($('s-cadeaux')?.value)
+  };
+  DB.jours=DB.jours.filter(j=>j.date!==date);
+  DB.jours.push(r);
+  // Save FDJ alongside if filled
+  const fdjFilled=N($('fs-vendus')?.value)||N($('fs-rembj')?.value)||N($('fn-rembj')?.value);
+  if(fdjFilled){
+    DB.fdj=DB.fdj.filter(f=>f.date!==date);
+    DB.fdj.push({date,s_vendus:N($('fs-vendus')?.value),s_rembj:N($('fs-rembj')?.value),s_lotoj:N($('fs-lotoj')?.value),s_lotor:N($('fs-lotor')?.value),n_rembj:N($('fn-rembj')?.value),n_lotoj:N($('fn-lotoj')?.value),n_lotor:N($('fn-lotor')?.value)});
+  }
+  $('recap-status').textContent='✓ Enregistré';
+  $('recap-status').style.color='var(--green)';
+  renderRecent();
+  toast('Journée du '+J(date)+' '+date.slice(8)+'/'+date.slice(5,7)+' enregistrée');
+}
+
+function renderRecent(){
+  const m=mon(),rs=rows(m).slice(-6).reverse();
+  const el=$('recap-recent');if(!el)return;
+  if(!rs.length){el.innerHTML='<span style="color:var(--tx3)">Aucune saisie ce mois.</span>';return;}
+  let h='';
+  rs.forEach(r=>{
+    const p=P(),rev=revNet(r,p),ca=caTotal(r);
+    h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd)">
+      <div>
+        <span style="font-size:11px;font-weight:500">${J(r.date).slice(0,3)} ${r.date.slice(8)}/${r.date.slice(5,7)}</span>
+        <span style="font-size:10px;color:var(--tx3);margin-left:6px">${r.tickets||0} tickets</span>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">${fN(ca)} €</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--purple)">${fN(rev)} € net</div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=h;
+}
+
+// ════════════════════════════════════
+// FDJ
+// ════════════════════════════════════
+function fdjCalc(){
+  const ej=N($('fs-rembj')?.value)-N($('fn-rembj')?.value);
+  const elj=N($('fs-lotoj')?.value)-N($('fn-lotoj')?.value);
+  const elr=N($('fs-lotor')?.value)-N($('fn-lotor')?.value);
+  const setI=(id,v)=>{const el=$(id);if(!el)return;el.value=(v>=0?'+':'')+fN(v);el.style.color=Math.abs(v)<0.01?'var(--tx3)':v>0?'var(--green)':'var(--red)';el.style.background=Math.abs(v)<0.01?'':'var(--'+(v>0?'green':'red')+'-g)';el.style.borderColor=Math.abs(v)<0.01?'var(--bd2)':'rgba('+(v>0?'16,185,129':'239,68,68')+',.25)';};
+  setI('fdj-ej',ej);setI('fdj-elj',elj);setI('fdj-elr',elr);
+}
+function fdjSave(){/* FDJ now saved as part of saveJour */}
+
+function renderFDJ(){
+  // Filter FDJ entries by selected month
+  const m=mon();
+  const rs=DB.fdj.filter(r=>r.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
+  const total=DB.fdj.length; // all time for context
+
+  const hasEcart=r=>{
+    const ej=Math.abs(r.s_rembj-r.n_rembj);
+    const elj=Math.abs(r.s_lotoj-r.n_lotoj);
+    const elr=Math.abs(r.s_lotor-r.n_lotor);
+    return ej>0.01||elj>0.01||elr>0.01;
+  };
+  const ok=rs.filter(r=>!hasEcart(r)).length;
+  const ko=rs.filter(r=>hasEcart(r)).length;
+  const tVendus=rs.reduce((s,r)=>s+(r.s_vendus||0),0);
+
+  set('f-jours',rs.length);
+  set('f-jours-s','sur '+MOIS[+mon().slice(5)]);
+  set('f-ok',ok);
+  set('f-ko',ko);
+  set('f-vendus',fE(tVendus));
+  $('fdj-badge').textContent=rs.length+' entrées';
+
+  // Chart écarts jeux
+  const labels=rs.map(r=>J(r.date).slice(0,3)+' '+r.date.slice(8));
+  const ecarts=rs.map(r=>r.s_rembj-r.n_rembj);
+  mkChart('ch-fdj-ej','bar',{
+    labels,
+    datasets:[{
+      label:'Écart jeux',
+      data:ecarts,
+      backgroundColor:ecarts.map(v=>Math.abs(v)<0.01?'rgba(74,86,110,.4)':v>0?'rgba(16,185,129,.6)':'rgba(239,68,68,.6)'),
+      borderColor:ecarts.map(v=>Math.abs(v)<0.01?'#4a566e':v>0?'var(--green)':'var(--red)'),
+      borderWidth:1,borderRadius:4
+    }]
+  },{yFmt:v=>v+'€'});
+
+  // Donut status
+  mkChart('ch-fdj-status','doughnut',{
+    labels:['Sans écart','Avec écart','Non saisi'],
+    datasets:[{
+      data:[ok,ko,Math.max(0,rs.length-ok-ko+0)],
+      backgroundColor:['#10b981','#ef4444','#1e2740'],
+      borderWidth:0,hoverOffset:6
+    }]
+  },{noScales:true,legend:{display:true,position:'bottom',labels:{color:'#8896b3',font:{size:10},padding:10,boxWidth:10}}});
+
+  // Table
+  let h='';
+  if(!rs.length){
+    $('fdj-tbody').innerHTML=`<tr><td colspan="10" class="left" style="padding:16px;color:var(--tx3)">Aucune donnée FDJ pour ce mois. Saisissez la réconciliation dans <strong>Saisie du jour → Étape 5</strong>.</td></tr>`;
+    return;
+  }
+  rs.forEach(r=>{
+    const ej=r.s_rembj-r.n_rembj;
+    const elj=r.s_lotoj-r.n_lotoj;
+    const ok2=!hasEcart(r);
+    const cE=v=>Math.abs(v)<0.01?'c-mu':v>0?'c-gr':'c-re';
+    const badge=ok2
+      ?'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(16,185,129,.12);color:var(--green)">OK</span>'
+      :'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(239,68,68,.12);color:var(--red)">ÉCART</span>';
+    h+=`<tr>
+      <td class="left">${J(r.date)}</td>
+      <td class="left c-mu">${r.date.slice(8)}/${r.date.slice(5,7)}</td>
+      <td class="c-tx">${fN(r.s_vendus)}</td>
+      <td class="c-mu">${fN(r.s_rembj)}</td>
+      <td class="c-mu">${fN(r.n_rembj)}</td>
+      <td class="${cE(ej)}">${ej>=0?'+':''}${fN(ej)}</td>
+      <td class="c-mu">${fN(r.s_lotoj)}</td>
+      <td class="c-mu">${fN(r.n_lotoj)}</td>
+      <td class="${cE(elj)}">${elj>=0?'+':''}${fN(elj)}</td>
+      <td style="text-align:right">${badge}</td>
+    </tr>`;
+  });
+  $('fdj-tbody').innerHTML=h;
+}
+
+// ════════════════════════════════════
+// CHARTS FACTORY
+// ════════════════════════════════════
+const CHARTS={};
+function mkChart(id,type,data,opts={}){
+  if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];}
+  const ctx=$(id);if(!ctx)return;
+  CHARTS[id]=new Chart(ctx,{type,data,options:{
+    responsive:true,
+    plugins:{legend:opts.legend||{display:false},tooltip:{backgroundColor:'#1c2335',titleColor:'#c8d3ea',bodyColor:'#8896b3',borderColor:'#1e2740',borderWidth:1}},
+    scales:opts.noScales?undefined:{
+      x:{ticks:{color:'#4a566e',font:{size:9,family:"'JetBrains Mono'"}},grid:{color:'rgba(30,39,64,.7)'}},
+      y:{ticks:{color:'#4a566e',font:{size:9,family:"'JetBrains Mono'"},callback:opts.yFmt||(v=>fN(v)+'€')},grid:{color:'rgba(30,39,64,.7)'},...(opts.yOpts||{})}
+    },...(opts.extra||{})
+  }});
+}
+
+// ════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════
+function renderDashboard(){
+  const m=mon(),rs=rows(m),p=P();
+  const tCA=rs.reduce((s,r)=>s+caTotal(r),0);
+  const tRev=rs.reduce((s,r)=>s+revNet(r,p),0);
+  const tBar=rs.reduce((s,r)=>s+barTot(r),0);
+  const tFDJ=rs.reduce((s,r)=>s+r.jeux*p.jeux+r.loto*p.loto,0);
+  let solde=0;rs.forEach(r=>solde+=(r.esp||0)-(r.depot||0)-(r.fdc||0));
+
+  set('k-ca',fE(tCA));set('k-ca-s',rs.length+' jours');
+  set('k-rev',fE(tRev));set('k-rev-s',(tCA>0?(tRev/tCA*100).toFixed(1):0)+'% du CA');
+  set('k-bar',fE(tBar));set('k-bar-s',(tCA>0?(tBar/tCA*100).toFixed(1):0)+'% du CA');
+  set('k-fdj',fE(tFDJ));
+  set('k-solde',fE(solde));
+
+  const lbl=rs.map(r=>J(r.date).slice(0,3)+' '+r.date.slice(8));
+  mkChart('ch-ca','bar',{labels:lbl,datasets:[{data:rs.map(r=>caTotal(r)),backgroundColor:'rgba(59,130,246,.45)',borderColor:'rgba(59,130,246,.9)',borderWidth:1,borderRadius:4}]});
+
+  const rd={Tabac:rs.reduce((s,r)=>s+r.tabac*p.tabac,0),'FDJ/Loto':rs.reduce((s,r)=>s+r.jeux*p.jeux+r.loto*p.loto,0),Bar:rs.reduce((s,r)=>s+barTot(r),0),Presse:rs.reduce((s,r)=>s+r.presse*p.presse,0),Autres:rs.reduce((s,r)=>s+r.fumeurs+r.papier+r.confiserie+r.divers,0)};
+  mkChart('ch-dough','doughnut',{labels:Object.keys(rd),datasets:[{data:Object.values(rd),backgroundColor:['#a78bfa','#34d399','#38bdf8','#f59e0b','#64748b'],borderWidth:0,hoverOffset:6}]},{noScales:true,legend:{display:true,position:'bottom',labels:{color:'#8896b3',font:{size:10},padding:8,boxWidth:10}}});
+
+  const wk=weekGroup(rs),wkK=Object.keys(wk).sort();
+  mkChart('ch-pmt','bar',{labels:wkK.map(w=>'S.'+w.slice(8)),datasets:[{label:'CB',data:wkK.map(w=>wk[w].reduce((s,r)=>s+(r.cb||0),0)),backgroundColor:'rgba(59,130,246,.55)',borderRadius:3},{label:'Esp.',data:wkK.map(w=>wk[w].reduce((s,r)=>s+(r.esp||0),0)),backgroundColor:'rgba(16,185,129,.45)',borderRadius:3}]},{legend:{display:true,position:'bottom',labels:{color:'#8896b3',font:{size:10},padding:8,boxWidth:10}}});
+
+  mkChart('ch-tabac-d','bar',{labels:lbl,datasets:[{data:rs.map(r=>r.tabac*p.tabac),backgroundColor:'rgba(167,139,250,.5)',borderColor:'#a78bfa',borderWidth:1,borderRadius:4}]});
+  mkChart('ch-bar-tva','bar',{labels:lbl,datasets:[{label:'10%',data:rs.map(r=>r.bar10),backgroundColor:'rgba(56,189,248,.55)',borderRadius:3},{label:'20%',data:rs.map(r=>r.bar20),backgroundColor:'rgba(165,180,252,.5)',borderRadius:3}]},{legend:{display:true,position:'bottom',labels:{color:'#8896b3',font:{size:10},padding:8,boxWidth:10}}});
+}
+
+// ════════════════════════════════════
+// SUIVI TABAC
+// ════════════════════════════════════
+function renderTabac(){
+  const m=mon(),rs=rows(m),p=P();
+  const tP=rs.reduce((s,r)=>s+r.tabac,0),tC=rs.reduce((s,r)=>s+r.tabac*p.tabac,0);
+  const tF=rs.reduce((s,r)=>s+r.jeux*p.jeux+r.loto*p.loto,0);
+  const tPr=rs.reduce((s,r)=>s+r.presse*p.presse,0);
+  set('t-pub',fE(tP));set('t-com',fE(tC));set('t-com-s',(p.tabac*100).toFixed(2)+'% — '+rs.length+' j.');set('t-fdj',fE(tF));set('t-reg',fE(tC+tF+tPr));
+
+  const lbl=rs.map(r=>J(r.date).slice(0,3)+' '+r.date.slice(8));
+  mkChart('ch-t-com','bar',{labels:lbl,datasets:[{data:rs.map(r=>r.tabac*p.tabac),backgroundColor:'rgba(167,139,250,.5)',borderColor:'#a78bfa',borderWidth:1,borderRadius:4}]});
+  mkChart('ch-t-struct','doughnut',{labels:['Tabac','FDJ','Presse'],datasets:[{data:[tC,tF,tPr],backgroundColor:['#a78bfa','#34d399','#f59e0b'],borderWidth:0,hoverOffset:6}]},{noScales:true,legend:{display:true,position:'bottom',labels:{color:'#8896b3',font:{size:10},padding:8,boxWidth:10}}});
+
+  let h='';
+  rs.forEach(r=>{
+    const c=r.tabac*p.tabac,cj=r.jeux*p.jeux,cl=r.loto*p.loto,cp=r.presse*p.presse;
+    h+=`<tr><td class="left">${J(r.date)}</td><td class="left c-mu">${r.date.slice(8)}/${r.date.slice(5,7)}</td><td class="c-mu">${fN(r.tabac)}</td><td class="c-pu">${fN(c)}</td><td class="c-mu">${fN(r.jeux)}</td><td class="c-gr">${fN(cj)}</td><td class="c-mu">${fN(r.loto)}</td><td class="c-gr">${fN(cl)}</td><td class="c-mu">${fN(r.presse)}</td><td class="c-gr">${fN(cp)}</td><td class="c-am">${fN(c+cj+cl+cp)}</td></tr>`;
+  });
+  h+=`<tr class="tr-total"><td class="left" colspan="2">TOTAL</td><td>${fN(rs.reduce((s,r)=>s+r.tabac,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.tabac*p.tabac,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.jeux,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.jeux*p.jeux,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.loto,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.loto*p.loto,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.presse,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.presse*p.presse,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.tabac*p.tabac+r.jeux*p.jeux+r.loto*p.loto+r.presse*p.presse,0))}</td></tr>`;
+  $('t-tbody').innerHTML=h;
+}
+
+// ════════════════════════════════════
+// SUIVI BAR
+// ════════════════════════════════════
+function renderBar(){
+  const m=mon(),rs=rows(m);
+  const tB=rs.reduce((s,r)=>s+barTot(r),0);
+  const t10=rs.reduce((s,r)=>s+r.bar10,0),t20=rs.reduce((s,r)=>s+r.bar20,0);
+  const tk=rs.reduce((s,r)=>s+(r.tickets||0),0);
+  set('b-tot',fE(tB));set('b-tot-s',rs.length+' jours');
+  set('b-10',fE(t10));set('b-10-s',tB>0?(t10/tB*100).toFixed(1)+'%':'—');
+  set('b-20',fE(t20));set('b-20-s',tB>0?(t20/tB*100).toFixed(1)+'%':'—');
+  set('b-tk',tk>0?fE(tB/tk):'—');
+
+  const lbl=rs.map(r=>J(r.date).slice(0,3)+' '+r.date.slice(8));
+  mkChart('ch-b-jour','bar',{labels:lbl,datasets:[{label:'10%',data:rs.map(r=>r.bar10),backgroundColor:'rgba(56,189,248,.55)',borderRadius:3},{label:'20%',data:rs.map(r=>r.bar20),backgroundColor:'rgba(165,180,252,.5)',borderRadius:3},{label:'Emporter',data:rs.map(r=>r.boissons),backgroundColor:'rgba(100,116,139,.4)',borderRadius:3}]},{legend:{display:true,position:'bottom',labels:{color:'#8896b3',font:{size:10},padding:8,boxWidth:10}}});
+  mkChart('ch-b-pie','doughnut',{labels:['TVA 10%','TVA 20%','À emporter'],datasets:[{data:[t10,t20,rs.reduce((s,r)=>s+r.boissons,0)],backgroundColor:['#38bdf8','#818cf8','#475569'],borderWidth:0,hoverOffset:6}]},{noScales:true,legend:{display:true,position:'bottom',labels:{color:'#8896b3',font:{size:10},padding:8,boxWidth:10}}});
+
+  let h='';
+  rs.forEach(r=>{
+    const bt=barTot(r),ct=caTotal(r);
+    h+=`<tr><td class="left">${J(r.date)}</td><td class="left c-mu">${r.date.slice(8)}/${r.date.slice(5,7)}</td><td class="c-cy">${fN(r.bar10)}</td><td style="color:#a5b4fc;font-family:var(--mono)">${fN(r.bar20)}</td><td class="c-mu">${r.boissons>0?fN(r.boissons):'—'}</td><td class="c-tx">${fN(bt)}</td><td class="c-mu">${ct>0?(bt/ct*100).toFixed(1):0}%</td><td class="c-mu">${r.tickets||'—'}</td></tr>`;
+  });
+  const sB=rs.reduce((s,r)=>s+barTot(r),0),sC=rs.reduce((s,r)=>s+caTotal(r),0);
+  h+=`<tr class="tr-total"><td class="left" colspan="2">TOTAL</td><td>${fN(rs.reduce((s,r)=>s+r.bar10,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.bar20,0))}</td><td>${fN(rs.reduce((s,r)=>s+r.boissons,0))}</td><td>${fN(sB)}</td><td>${sC>0?(sB/sC*100).toFixed(1):0}%</td><td>${rs.reduce((s,r)=>s+(r.tickets||0),0)}</td></tr>`;
+  $('b-tbody').innerHTML=h;
+}
+
+// ════════════════════════════════════
+// SYNTHESE
+// ════════════════════════════════════
+function renderSynthese(){
+  const m=mon(),rs=rows(m),p=P();
+  const[yr,mo]=m.split('-').map(Number);
+  const wks=weekGroup(rs);
+  let html=`<div style="margin-bottom:18px;font-size:17px;font-weight:700;color:#e8edf8">${MOIS[mo]} ${yr} — Synthèse hebdomadaire</div>`;
+  let gCA=0,gRev=0,gBar=0,gJ=0;
+  Object.keys(wks).sort().forEach((wk,i)=>{
+    const wr=wks[wk];
+    const wCA=wr.reduce((s,r)=>s+caTotal(r),0),wRev=wr.reduce((s,r)=>s+revNet(r,p),0);
+    const wBar=wr.reduce((s,r)=>s+barTot(r),0),wTab=wr.reduce((s,r)=>s+r.tabac*p.tabac,0);
+    const wFDJ=wr.reduce((s,r)=>s+r.jeux*p.jeux+r.loto*p.loto,0);
+    const tx=wCA>0?(wRev/wCA*100).toFixed(1):0;
+    const best=wr.reduce((a,b)=>caTotal(a)>caTotal(b)?a:b);
+    gCA+=wCA;gRev+=wRev;gBar+=wBar;gJ+=wr.length;
+    html+=`<div class="wb"><div class="wb-head">
+      <div><div class="wb-title">Semaine ${i+1} <span style="color:var(--tx3);font-size:12px;font-weight:400">du ${wk.slice(8)}/${wk.slice(5,7)}</span></div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:3px">${wr.length} jours · Meilleur : <span style="color:var(--tx)">${J(best.date)} ${best.date.slice(8)}/${best.date.slice(5,7)} — ${fN(caTotal(best))} €</span></div></div>
+      <div class="wb-metrics">
+        <div class="wm"><div class="wm-l">CA</div><div class="wm-v" style="color:var(--blue)">${fN(wCA)} €</div></div>
+        <div class="wm"><div class="wm-l">Revenu net</div><div class="wm-v" style="color:var(--purple)">${fN(wRev)} €</div></div>
+        <div class="wm"><div class="wm-l">Taux net</div><div class="wm-v" style="color:var(--green)">${tx}%</div></div>
+        <div class="wm"><div class="wm-l">CA Bar</div><div class="wm-v" style="color:var(--cyan)">${fN(wBar)} €</div></div>
+        <div class="wm"><div class="wm-l">Com. tabac</div><div class="wm-v" style="color:var(--purple)">${fN(wTab)} €</div></div>
+        <div class="wm"><div class="wm-l">Com. FDJ</div><div class="wm-v" style="color:var(--fdj)">${fN(wFDJ)} €</div></div>
+      </div>
+    </div></div>`;
+  });
+  if(gJ>0){
+    const tx=gCA>0?(gRev/gCA*100).toFixed(1):0;
+    html+=`<div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:var(--r2);padding:15px 20px;display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:700;color:var(--green);min-width:120px">TOTAL ${MOIS[mo].toUpperCase()}</span>
+      <div><div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em">CA encaissé</div><div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--blue)">${fN(gCA)} €</div></div>
+      <div><div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em">Revenu net</div><div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--purple)">${fN(gRev)} €</div></div>
+      <div><div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em">Taux net</div><div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--green)">${tx}%</div></div>
+      <div><div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em">CA bar</div><div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--cyan)">${fN(gBar)} €</div></div>
+      <div><div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em">Jours</div><div style="font-family:var(--mono);font-size:15px;font-weight:600">${gJ}</div></div>
+    </div>`;
+  }
+  $('synthese-body').innerHTML=html;
+}
+
+// ════════════════════════════════════
+// HISTORIQUE
+// ════════════════════════════════════
+function renderHistorique(){
+  const m=mon(),rs=rows(m),p=P();
+  $('histo-badge').textContent=rs.length+' jours';
+  const wks=weekGroup(rs);let h='';
+  Object.keys(wks).sort().forEach(wk=>{
+    wks[wk].forEach(r=>{
+      const ct=caTotal(r),rv=revNet(r,p);
+      const aut=r.fumeurs+r.papier+r.confiserie+r.carterie+r.chewing+r.divers+r.boissons+r.cadeaux+r.tel+r.timbres;
+      h+=`<tr><td class="left">${J(r.date)}</td><td class="left c-mu">${r.date.slice(8)}/${r.date.slice(5,7)}</td><td class="c-mu">${fN(r.tabac)}</td><td class="c-pu">${fN(r.tabac*p.tabac)}</td><td class="c-mu">${fN(r.jeux)}</td><td class="c-mu">${fN(r.loto)}</td><td class="c-cy">${fN(r.bar10)}</td><td style="color:#a5b4fc;font-family:var(--mono)">${fN(r.bar20)}</td><td class="c-mu">${fN(r.presse)}</td><td class="c-mu">${aut>0?fN(aut):'—'}</td><td class="c-tx">${fN(ct)}</td><td class="c-gr">${fN(rv)}</td><td class="c-mu">${r.tickets||'—'}</td></tr>`;
+    });
+    const wr=wks[wk],wCA=wr.reduce((s,r)=>s+caTotal(r),0),wRev=wr.reduce((s,r)=>s+revNet(r,p),0);
+    h+=`<tr class="tr-week"><td class="left" colspan="10">Semaine du ${wk.slice(8)}/${wk.slice(5,7)} — ${wr.length} jours</td><td>${fN(wCA)} €</td><td>${fN(wRev)} €</td><td></td></tr>`;
+  });
+  $('histo-tbody').innerHTML=h;
+}
+
+// ════════════════════════════════════
+// PARAMS
+// ════════════════════════════════════
+function saveParams(){
+  const p=P();
+  $('sf-tabac').textContent=(p.tabac*100).toFixed(2)+'%';
+  $('sf-fdj').textContent=(p.jeux*100).toFixed(1)+'%';
+  $('sf-loto').textContent=(p.loto*100).toFixed(1)+'%';
+  $('sf-presse').textContent=(p.presse*100).toFixed(1)+'%';
+}
+
+// ════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════
+function exportCSV(){
+  const m=mon(),rs=rows(m),p=P();
+  let csv='Date;Jour;CA total;Revenu net;Tabac pub.;Com. tabac;FDJ inst.;Loto;Bar 10%;Bar 20%;Boissons;Presse;Autres;Tickets\n';
+  rs.forEach(r=>{
+    const aut=r.fumeurs+r.papier+r.confiserie+r.carterie+r.chewing+r.divers+r.cadeaux+r.tel+r.timbres;
+    csv+=`${r.date};${J(r.date)};${caTotal(r).toFixed(2)};${revNet(r,p).toFixed(2)};${r.tabac};${(r.tabac*p.tabac).toFixed(2)};${r.jeux};${r.loto};${r.bar10};${r.bar20};${r.boissons};${r.presse};${aut.toFixed(2)};${r.tickets||0}\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`suivi_${m}.csv`;a.click();
+}
+
+// ════════════════════════════════════
+// INIT
+// ════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  const today=new Date().toISOString().slice(0,10);
+  $('s-date').value=today;$('fdj-date').value=today;
+  $('s-jour').value=J(today);
+  $('sel-month').value='2026-01';
+  renderBadge();renderDashboard();renderRecent();
+});
+</script>
+</body>
+</html>
